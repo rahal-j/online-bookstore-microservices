@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Online Bookstore</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+
+    h1,
+    h2 {
+      color: #333;
+    }
+
+    input {
+      margin: 5px;
+      padding: 5px;
+    }
+
+    button {
+      margin: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    ul {
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      list-style-type: none;
+    }
+
+    li {
+      padding: 5px 0;
+      border-bottom: 1px solid #ddd;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>📚 Online Bookstore</h1>
+
+  <h2>Register User</h2>
+  <input id="user-name" placeholder="Name" />
+  <input id="user-email" placeholder="Email" />
+  <button onclick="registerUser()">Register</button>
+  <p id="user-result"></p>
+
+  <h2>Add Book</h2>
+  <input id="book-title" placeholder="Title" />
+  <input id="book-author" placeholder="Author" />
+  <button onclick="addBook()">Add Book</button>
+  <p id="book-result"></p>
+
+  <h2>Book List</h2>
+  <button onclick="getBooks()">Refresh Book List</button>
+  <ul id="book-list"></ul>
+
+  <h2>Place Order</h2>
+  <select id="order-user"></select>
+  <select id="order-book"></select>
+  <button onclick="placeOrder()">Place Order</button>
+  <p id="order-result"></p>
+
+  <h2>All Orders</h2>
+  <button onclick="getOrders()">Refresh Order List</button>
+  <ul id="order-list"></ul>
+
+
+  <script>
+    const userServiceUrl = 'http://localhost:5001';
+    const bookServiceUrl = 'http://localhost:5002';
+
+    function registerUser() {
+      const name = document.getElementById("user-name").value;
+      const email = document.getElementById("user-email").value;
+
+      fetch(`${userServiceUrl}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email })
+      })
+        .then(res => res.json())
+        .then(data => document.getElementById("user-result").innerText = data.message)
+        .catch(err => alert("Error registering user"));
+    }
+
+    function addBook() {
+      const title = document.getElementById("book-title").value;
+      const author = document.getElementById("book-author").value;
+
+      fetch(`${bookServiceUrl}/books`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, author })
+      })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("book-result").innerText = data.message;
+          getBooks(); // auto-refresh list
+        })
+        .catch(err => alert("Error adding book"));
+    }
+
+    function getBooks() {
+      fetch(`${bookServiceUrl}/books`)
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById("book-list");
+          list.innerHTML = '';
+          data.forEach(book => {
+            const li = document.createElement("li");
+            li.innerText = `${book.title} by ${book.author}`;
+            list.appendChild(li);
+          });
+        })
+        .catch(err => alert("Error fetching books"));
+    }
+
+    // Auto-load book list when page loads
+    window.onload = () => getBooks();
+
+    const orderServiceUrl = 'http://localhost:5003';
+
+    function loadDropdowns() {
+      // Populate user dropdown
+      fetch(`${userServiceUrl}/users`)
+        .then(res => res.json())
+        .then(users => {
+          const userSelect = document.getElementById("order-user");
+          userSelect.innerHTML = '';
+          users.forEach(user => {
+            const option = document.createElement("option");
+            option.value = user.name;
+            option.innerText = user.name;
+            userSelect.appendChild(option);
+          });
+        });
+
+      // Populate book dropdown
+      fetch(`${bookServiceUrl}/books`)
+        .then(res => res.json())
+        .then(books => {
+          const bookSelect = document.getElementById("order-book");
+          bookSelect.innerHTML = '';
+          books.forEach(book => {
+            const option = document.createElement("option");
+            option.value = book.title;
+            option.innerText = book.title;
+            bookSelect.appendChild(option);
+          });
+        });
+    }
+
+    function placeOrder() {
+      const user = document.getElementById("order-user").value;
+      const book = document.getElementById("order-book").value;
+
+      fetch(`${orderServiceUrl}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, book })
+      })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("order-result").innerText = data.message;
+          getOrders();
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Error placing order");
+        });
+    }
+
+    function getOrders() {
+      fetch(`${orderServiceUrl}/orders`)
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById("order-list");
+          list.innerHTML = '';
+          data.forEach(order => {
+            const li = document.createElement("li");
+            li.innerText = `${order.user} ordered "${order.book}"`;
+            list.appendChild(li);
+          });
+        });
+    }
+
+    // Load book list + dropdowns on page load
+    window.onload = () => {
+      getBooks();
+      loadDropdowns();
+      getOrders();
+    }
+  </script>
+</body>
+
+</html>
