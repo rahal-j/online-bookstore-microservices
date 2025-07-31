@@ -10,11 +10,6 @@ jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
 
-    services:
-      docker:
-        image: docker:24.0.2
-        options: --privileged
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -22,13 +17,16 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.10
+        python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
-        pip install -r user_service/requirements.txt
-        pip install -r book_service/requirements.txt
-        pip install -r order_service/requirements.txt
+    - name: Install dependencies for User Service
+      run: pip install -r user_service/requirements.txt
+
+    - name: Install dependencies for Book Service
+      run: pip install -r book_service/requirements.txt
+
+    - name: Install dependencies for Order Service
+      run: pip install -r order_service/requirements.txt
 
     - name: Run User Service Tests
       run: |
@@ -38,13 +36,29 @@ jobs:
       run: |
         PYTHONPATH=. pytest book_service/tests/
 
+    - name: Run Order Service Tests
+      run: |
+        PYTHONPATH=. pytest order_service/tests/
+
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+
     - name: Build Docker images
       run: |
         docker build -t user-service ./user_service
         docker build -t book-service ./book_service
         docker build -t order-service ./order_service
 
-    # Optional deployment step
+    # Optional: Push images to Docker Hub or registry
+    # - name: Docker Login
+    #   run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    # - name: Push Images
+    #   run: |
+    #     docker tag user-service your-dockerhub/user-service
+    #     docker push your-dockerhub/user-service
+
+    # Optional: Deploy to Kubernetes
     # - name: Deploy to Kubernetes
     #   run: |
     #     kubectl apply -f k8s/

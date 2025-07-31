@@ -1,0 +1,4 @@
+flask
+flask-cors
+prometheus_flask_exporter
+pytest
