@@ -2,9 +2,10 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY app.py .
+COPY . .
 
-RUN pip install flask flask-cors requests
+# Combine install steps for cache efficiency
+RUN pip install --no-cache-dir flask flask-cors requests prometheus_flask_exporter
 
 EXPOSE 5000
 
